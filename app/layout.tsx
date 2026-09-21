@@ -1,3 +1,5 @@
+import Providers from './providers';
+import './globals.css';
 import type { Metadata } from 'next';
 import { Roboto } from 'next/font/google';
 import './globals.css'; // Переконайтеся, що імпорт глобальних стилів збережено
@@ -35,11 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }) {
+
+
   return (
     <html lang="en">
       <body className={`${roboto.className} ${roboto.variable}`}>
-        {children}
-        {modal}
+        <Providers>
+          {children}
+          {modal}
+        </Providers>
       </body>
     </html>
   );
