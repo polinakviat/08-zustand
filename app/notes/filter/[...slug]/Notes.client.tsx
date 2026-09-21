@@ -1,44 +1,43 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { fetchNotes } from '../../../../lib/api';
-import type { Note } from '../../../../types/note';
+import { fetchNotes } from '@/lib/api';
+import type { Note } from '@/types/note';
 
-import { NoteList } from '../../../../components/NoteList/NoteList';
-import { SearchBox } from '../../../../components/SearchBox/SearchBox';
-import { Modal } from '../../../../components/Modal/Modal';
-import { NoteForm } from '../../../../components/NoteForm/NoteForm';
-import { Pagination } from '../../../../components/Pagination/Pagination';
+import { NoteList } from '@/components/NoteList/NoteList';
+import { SearchBox } from '@/components/SearchBox/SearchBox';
+import { Pagination } from '@/components/Pagination/Pagination';
 
-import css from './NotesPage.module.css';
+import css from './NotesPage.module.css'; // Переконайтеся в правильності імпорту CSS
 
 interface NotesClientProps {
   tag?: string;
 }
 
 export default function NotesClient({ tag }: NotesClientProps) {
-   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  // 1. Стани залишено виключно для пагінації та пошуку
   const [page, setPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [inputValue, setInputValue] = useState<string>('');
 
   const perPage = 12;
 
+  // 2. Debounce для пошукового інпуту зі скиданням на 1 сторінку
   const debouncedSearch = useDebouncedCallback((value: string) => {
     setSearchQuery(value);
-    setPage(1); 
+    setPage(1);
   }, 300);
 
-  
   const handleSearchChange = (value: string) => {
     setInputValue(value);
     debouncedSearch(value);
   };
 
-  
+  // 3. Запит до API
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['notes', page, searchQuery, tag],
     queryFn: () => fetchNotes(page, perPage, searchQuery, tag),
@@ -48,48 +47,36 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const notes: Note[] = data?.notes || [];
   const totalPages: number = data?.totalPages || 0;
 
-  
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
-
   return (
     <div className={css.container}>
-      
+      {/* Пошук та кнопка-посилання на сторінку створення */}
       <div className={css.toolbar}>
         <SearchBox value={inputValue} onChange={handleSearchChange} />
-        <button
-          type="button"
-          className={css.createButton}
-          onClick={handleOpenModal}
-        >
+        <Link href="/notes/action/create" className={css.createButton}>
           Create note +
-        </button>
+        </Link>
       </div>
 
-      
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-        <NoteForm onClose={handleCloseModal} />
-      </Modal>
-
-      
+      {/* Індикатори стану */}
       {isLoading && <p className={css.statusText}>Завантаження нотаток...</p>}
-      
+
       {isError && (
         <p className={css.errorText}>
           Помилка завантаження: {error instanceof Error ? error.message : 'Невідома помилка'}
         </p>
       )}
 
-      
+      {/* Список нотаток */}
       {!isLoading && !isError && notes.length > 0 && (
         <NoteList notes={notes} />
       )}
-      
+
+      {/* Повідомлення про відсутність нотаток */}
       {!isLoading && !isError && notes.length === 0 && (
         <p className={css.statusText}>Нотаток не знайдено.</p>
       )}
-      
-      
+
+      {/* Пагінація */}
       {!isLoading && !isError && totalPages > 1 && (
         <Pagination
           pageCount={totalPages}
